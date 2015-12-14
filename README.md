@@ -25,3 +25,7 @@ in an entirely natural fashion as:
 > `always(type_id=15 implies (next type_id=10))`
 
 using LTL's temporal modalities `always` and `next`.
+
+## Copyright notice
+Copyright (c) Marek Kwiatkowski, 2015. All rights reserved.
+Unlicensed use and distribution prohibited.
