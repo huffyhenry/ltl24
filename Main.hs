@@ -4,18 +4,12 @@
 
 module Main where
 
-import Defs
-import F24
-import F24File
-import Parsers
-import Text.ParserCombinators.Parsec
+import UI
+
+import System.Console.Haskeline
+
+welcome = "Welcome to LTL24 v0.0.1. Copyright (c) Marek Kwiatkowski 2015."
 
 main :: IO ()
-main = do
-    let req = "always (type_id=15 implies next type_id=10)"
-    game <- loadGameFromFile "f24sample.xml"
-    case parse ltl24 "" req of
-        Left err -> putStrLn $ show err
-        Right phi -> do putStrLn $ "parsed: " ++ (show phi)
-                        putStrLn $ "normed: " ++ (show $ nf phi)
-                        putStrLn $ "checked: " ++ (show $ sat phi (events game))
+main = do putStrLn welcome
+          runInputT defaultSettings loop
