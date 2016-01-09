@@ -13,6 +13,8 @@ import Text.Parsec.Prim (parse)
 
 import F24
 import F24File
+import Defs
+import LTL24()
 import Spec
 import Parsers
 
@@ -63,7 +65,7 @@ runCmd :: Command -> [String] -> ProgramState
 runCmd cmd params = (fst cmd) params
 
 
-commands = [cmdQuit, cmdHelp, cmdAbout, cmdLoad, cmdStatus]
+commands = [cmdQuit, cmdHelp, cmdAbout, cmdLoad, cmdStatus, cmdVerify]
 
 -- The main program loop
 loop :: ProgramState
@@ -82,6 +84,7 @@ loop = do input <- getInputLine prompt
                               "about" -> runCmd cmdAbout params >> loop
                               "load" -> runCmd cmdLoad params >> loop
                               "status" -> runCmd cmdStatus params >> loop
+                              "verify" -> runCmd cmdVerify params >> loop
                               otherwise -> outputStrLn msg >> loop
 
 cmdQuit :: Command
@@ -150,4 +153,22 @@ cmdStatus = (\params -> do env <- lift get
              ("status",
               "status -- display the state of the active environment.\n" ++
               "USAGE: status")
+            )
+
+cmdVerify :: Command
+cmdVerify = (\params -> do env <- lift get
+                           let cg :: Game -> [Spec] -> ProgramState
+                               cg g (s:ss) = let passed = sat (formula s) (events g)
+                                                 msg = if passed then "passed" else "failed"
+                                             in outputStrLn ((sname s) ++ ": " ++ msg) >> cg g ss
+                               cg g [] = return ()
+
+                           let cgs :: [Game] -> [Spec] -> ProgramState
+                               cgs (g:gs) ss = do outputStrLn ("Verifying game " ++ (show $ gid g) ++ ".")
+                                                  cg g ss
+                               cgs [] _ = return ()
+                           cgs (games env) (specs env),
+             ("verify",
+              "verify -- check if the games satisfy the specs.\n" ++
+              "USAGE: verify")
             )
