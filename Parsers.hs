@@ -12,6 +12,7 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 import Literal
 import EventProp
 import LTL24
+import Spec
 
 ltlDef = emptyDef { Token.commentStart = "/*",
                     Token.commentEnd = "*/",
@@ -28,6 +29,14 @@ reserved = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
 parens = Token.parens lexer
 natural = Token.natural lexer
+identifier = Token.identifier lexer
+symbol = Token.symbol lexer
+
+spec :: Parser Spec
+spec = do nm <- identifier
+          _ <- symbol ":"
+          phi <- ltl24
+          return Spec{ sname=nm, formula=phi }
 
 ltl24 :: Parser LTL24
 ltl24 = buildExpressionParser ltlOps ltl24Term <?> "game predicate"
