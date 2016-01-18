@@ -189,3 +189,14 @@ runVerify _ = do env <- lift get
 
                  cgs (games env) (specs env)
 
+--cmdDrop = Command {
+--   commandName = "drop",
+--   helpText = "drop -- remove a game or a spec from the active environment.\n" ++
+--              "USAGE: drop [game | spec] <identifier>",
+--   runCommand = runDrop
+--}
+--
+--runDrop :: [String] -> ProgramState
+--runDrop ("game":ids) = return ()
+--runDrop ("spec":ids) = return ()
+--runDrop _ = failCmd cmdDrop
