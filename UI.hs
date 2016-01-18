@@ -16,7 +16,7 @@ import F24File
 import Defs
 import LTL24()
 import Spec
-import Parsers
+import qualified Parsers as P
 
 prompt = "LTL24$ "
 
@@ -138,7 +138,7 @@ runLoad :: [String] -> ProgramState
 runLoad ("game":rest) = do game <- lift (lift (loadGameFromFile (head rest)))
                            lift (modify (addGame game))
                            runCommand cmdStatus []
-runLoad ("spec":("inline":rest)) = do case parse spec "" (unwords rest) of
+runLoad ("spec":("inline":rest)) = do case parse P.spec "" (unwords rest) of
                                           Left _ -> outputStrLn "Syntax error."
                                           Right sp -> do lift $ modify (addSpec sp)
                                                          runCommand cmdStatus []
