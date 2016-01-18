@@ -31,18 +31,10 @@ data Environment = Environment {
 }
 
 addGame :: Game -> Environment -> Environment
-addGame game env = Environment{
-    config = config env,
-    games = (games env) ++ [game],
-    specs = specs env
-}
+addGame game env = env {games = games env ++ [game]}
 
 addSpec :: Spec -> Environment -> Environment
-addSpec spec env = Environment{
-    config = config env,
-    games = (games env),
-    specs = specs env ++ [spec]
-}
+addSpec spec env = env {specs = specs env ++ [spec]}
 
 defaultEnv :: Environment
 defaultEnv = Environment{
