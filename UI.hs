@@ -164,7 +164,7 @@ runStatus [] = do env <- lift get
                                                 n | n < 5 -> (show n) ++ " " ++ name ++ ": " ++ concat (intersperse ", " (map fid items))
                                                 n | n >= 5 -> info fid name (take 4 items) ++ ", ..."
                   outputStrLn ((info (show . gid) "game(s)" gms) ++ ".")
-                  outputStrLn ((info sname "spec(s)" sps) ++ ".")
+                  outputStrLn ((info specName "spec(s)" sps) ++ ".")
 
 cmdVerify :: Command
 cmdVerify = Command {
@@ -178,9 +178,9 @@ runVerify :: [String] -> ProgramState
 runVerify _ = do env <- lift get
                  let cg :: Game -> [Spec] -> ProgramState
                      cg g [] = return ()
-                     cg g (s:ss) = let passed = sat (formula s) (events g)
+                     cg g (s:ss) = let passed = sat (specFormula s) (events g)
                                        msg = if passed then "passed" else "failed"
-                                   in outputStrLn ((sname s) ++ ": " ++ msg) >> cg g ss
+                                   in outputStrLn ((specName s) ++ ": " ++ msg) >> cg g ss
                  let cgs :: [Game] -> [Spec] -> ProgramState
                      cgs [] _ = return ()
                      cgs (g:gs) ss = do outputStrLn ("Verifying game " ++ (show $ gid g) ++ ".")

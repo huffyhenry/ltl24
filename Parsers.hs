@@ -36,7 +36,7 @@ spec :: Parser Spec
 spec = do nm <- identifier
           _ <- symbol ":"
           phi <- ltl24
-          return Spec{ sname=nm, formula=phi }
+          return Spec{ specName=nm, specFormula=phi }
 
 ltl24 :: Parser LTL24
 ltl24 = buildExpressionParser ltlOps ltl24Term <?> "game predicate"

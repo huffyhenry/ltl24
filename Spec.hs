@@ -7,6 +7,6 @@ module Spec where
 import LTL24
 
 data Spec = Spec {
-    sname :: String,
-    formula :: LTL24
+    specName :: String,
+    specFormula :: LTL24
 }
