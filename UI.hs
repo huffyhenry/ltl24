@@ -30,6 +30,16 @@ data Environment = Environment {
     specs :: [Spec]
 }
 
+instance Show Environment where
+    show env = let join :: [String] -> String
+                   join = \items -> concat $ intersperse ", " items
+                   desc :: (a -> String) -> String -> [a] -> String
+                   desc _ n [] = "0 " ++ n
+                   desc f n is | length is < 5 = (show (length n)) ++ " " ++ n ++ ": " ++ (join $ map f is)
+                   desc f n is | length is >= 5 = desc f n (take 4 is) ++ ", ..."
+               in desc (show . gid) "game(s)" (games env) ++ ".\n" ++
+                  desc specName "spec(s)" (specs env) ++ "."
+
 addGame :: Game -> Environment -> Environment
 addGame game env = env {games = games env ++ [game]}
 
@@ -154,17 +164,8 @@ cmdStatus = Command {
 }
 
 runStatus :: [String] -> ProgramState
-runStatus [] = do env <- lift get
-                  -- FIXME: Define instance Show Environment instead
-                  let gms = games env
-                  let sps = specs env
-                  let info :: (a -> String) -> String -> [a] -> String
-                      info fid name items = case length items of
-                                                0 -> "0 " ++ name
-                                                n | n < 5 -> (show n) ++ " " ++ name ++ ": " ++ concat (intersperse ", " (map fid items))
-                                                n | n >= 5 -> info fid name (take 4 items) ++ ", ..."
-                  outputStrLn ((info (show . gid) "game(s)" gms) ++ ".")
-                  outputStrLn ((info specName "spec(s)" sps) ++ ".")
+runStatus _ = do env <- lift get
+                 outputStrLn (show env)
 
 cmdVerify :: Command
 cmdVerify = Command {
