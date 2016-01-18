@@ -47,120 +47,145 @@ defaultEnv = Environment{
 
 type ProgramState = InputT (StateT Environment IO) ()
 
--- A command consists of:
--- * function executing the command based on parameters
--- * command name
--- * help text
-type Command = ([String] -> ProgramState, (String, String))
+data Command = Command {
+    commandName :: String,
+    helpText :: String,
+    runCommand :: [String] -> ProgramState
+}
 
-runCmd :: Command -> [String] -> ProgramState
-runCmd cmd params = (fst cmd) params
+failCmd :: Command -> ProgramState
+failCmd cmd = outputStrLn ("Invalid command syntax. " ++
+                           "Say \"help " ++ commandName cmd ++ "\" for help.")
 
 
+commands :: [Command]
 commands = [cmdQuit, cmdHelp, cmdAbout, cmdLoad, cmdStatus, cmdVerify]
+
+getCommand :: String -> Maybe Command
+getCommand name = lookup name (zip (map commandName commands) commands)
 
 -- The main program loop
 loop :: ProgramState
 loop = do input <- getInputLine prompt
           case input of
-              Nothing -> runCmd cmdQuit []  -- Ctrl+D
-              Just "" -> loop
-              Just sth -> let cmd = head (words sth)
+              Nothing -> runCommand cmdQuit []  -- Ctrl+D
+              Just "" -> loop                   -- Return
+              Just sth -> let name = head (words sth)
                               params = tail (words sth)
-                              msg = "Unknown command " ++ show cmd ++ ". " ++
+                              msg = "Unknown command \"" ++ name ++ "\". " ++
                                     "Say \"help\" for the list of " ++
                                     "available commands."
-                          in case cmd of
-                              "quit" -> runCmd cmdQuit params
-                              "help" -> runCmd cmdHelp params >> loop
-                              "about" -> runCmd cmdAbout params >> loop
-                              "load" -> runCmd cmdLoad params >> loop
-                              "status" -> runCmd cmdStatus params >> loop
-                              "verify" -> runCmd cmdVerify params >> loop
-                              otherwise -> outputStrLn msg >> loop
+                          in if name == "quit" then runCommand cmdQuit params
+                             else case getCommand name of
+                                 Nothing -> outputStrLn msg >> loop
+                                 Just cmd -> runCommand cmd params >> loop
 
 cmdQuit :: Command
-cmdQuit = (\_ -> do input <- getInputLine "Really quit [y/n]? "
-                    case maybe Nothing (Just . (map toLower)) input of
-                        Just "y" -> outputStrLn "Bye." >> return ()
-                        Nothing -> runCmd cmdQuit []
-                        otherwise -> loop,
-           ("quit",
-            "quit -- exit the program.\n" ++
-            "USAGE: quit")
-          )
+cmdQuit = Command {
+    commandName = "quit",
+    helpText = "quit -- exit the program.\n" ++
+               "USAGE: quit",
+    runCommand = runQuit
+}
+
+runQuit :: [String] -> ProgramState
+runQuit _ = do input <- getInputLine "Really quit [y/n]? "
+               case maybe Nothing (Just . (map toLower)) input of
+                   Just "y" -> outputStrLn "Bye." >> return ()
+                   Nothing -> runQuit []
+                   otherwise -> loop
 
 cmdHelp :: Command
-cmdHelp = (\params -> let names = map (fst . snd) commands
-                          descs = map (snd . snd) commands
-                          find = \x -> lookup x (zip names descs)
-                          msg = \x -> "Unknown command " ++ show x ++ "."
-                          unkn = \x -> (outputStrLn (msg x) >> (fst cmdHelp) [])
-                      in case params of
-                          [] -> outputStrLn ("Available commands: " ++
-                                concat (intersperse ", " names) ++ ".\n" ++
-                                "Say \"help <command>\" for more information.")
-                          c:_ -> maybe (unkn c) outputStrLn (find c),
-           ("help",
-            "help -- display information on available commands.\n" ++
-            "USAGE: help <command>")
-          )
+cmdHelp = Command {
+    commandName = "help",
+    helpText = "help -- display information on available commands.\n" ++
+               "USAGE: help\n" ++
+               "       help <command name>",
+    runCommand = runHelp
+}
+
+runHelp :: [String] -> ProgramState
+runHelp [] = let cmdList = concat $ intersperse ", " (map commandName commands)
+             in outputStrLn ("Available commands: " ++ cmdList ++ ".")
+runHelp (sth:_) = case getCommand sth of
+                      Nothing -> outputStrLn ("Unknown command " ++ show sth ++ ".")
+                      Just cmd -> outputStrLn $ helpText cmd
 
 cmdAbout :: Command
-cmdAbout = (\_ -> do outputStrLn "LTL24 data querying and verification system, version 0.0.1."
-                     outputStrLn "Copyright (c) Marek Kwiatkowski <marek@mareklab.org>, 2015."
-                     outputStrLn "Unauthorized use and distribution prohibited.",
-            ("about",
-             "about -- display information about the program.\n" ++
-             "USAGE: about")
-           )
+cmdAbout = Command {
+    commandName = "about",
+    helpText = "about -- display information about the program.\n" ++
+               "USAGE: about",
+    runCommand = runAbout
+}
+
+runAbout :: [String] -> ProgramState
+runAbout _ = do outputStrLn "LTL24 data querying and verification system, version 0.0.1."
+                outputStrLn "Copyright (c) Marek Kwiatkowski <marek@mareklab.org>, 2015."
+                outputStrLn "Unauthorized use and distribution prohibited."
 
 cmdLoad :: Command
-cmdLoad = (\params -> case head params of
-                          "game" -> do let filename = head $ tail params
-                                       game <- lift $ lift (loadGameFromFile filename)
-                                       lift $ modify (addGame game)
-                          "spec" -> do case tail params of
-                                           "inline":rest -> do case parse spec "" (unwords rest) of
-                                                                   Left _ -> outputStrLn "Syntax error."
-                                                                   Right sp -> lift $ modify (addSpec sp),
-           ("load",
-            "load -- add games or specs to the active environment.\n" ++
-            "USAGE: load [game | spec] <filename>\n" ++
-            "       load spec inline <name>:<formula>")
-          )
+cmdLoad = Command {
+    commandName = "load",
+    helpText = "load -- add games or specs to the active environment.\n" ++
+               "USAGE: load [game | spec] <filename>\n" ++
+               "       load spec inline <name>:<formula>",
+    runCommand = runLoad
+}
+
+-- FIXME: Check if game or spec being added already exists
+runLoad :: [String] -> ProgramState
+runLoad ("game":rest) = do game <- lift (lift (loadGameFromFile (head rest)))
+                           lift (modify (addGame game))
+                           runCommand cmdStatus []
+runLoad ("spec":("inline":rest)) = do case parse spec "" (unwords rest) of
+                                          Left _ -> outputStrLn "Syntax error."
+                                          Right sp -> do lift $ modify (addSpec sp)
+                                                         runCommand cmdStatus []
+runLoad _ = failCmd cmdLoad
+
 
 cmdStatus :: Command
-cmdStatus = (\params -> do env <- lift get
-                           let gms = games env
-                           let sps = specs env
-                           let info :: (a -> String) -> String -> [a] -> String
-                               info fid name items = case length items of
-                                                         0 -> "0 " ++ name
-                                                         n | n < 5 -> (show n) ++ " " ++ name ++ ": " ++ concat (intersperse ", " (map fid items))
-                                                         n | n >= 5 -> info fid name (take 4 items) ++ ", ..."
-                           outputStrLn ((info (show . gid) "game(s)" gms) ++ ".")
-                           outputStrLn ((info sname "spec(s)" sps) ++ "."),
+cmdStatus = Command {
+    commandName = "status",
+    helpText = "status -- display the state of the active environment.\n" ++
+                "USAGE: status",
+    runCommand = runStatus
+}
 
-             ("status",
-              "status -- display the state of the active environment.\n" ++
-              "USAGE: status")
-            )
+runStatus :: [String] -> ProgramState
+runStatus [] = do env <- lift get
+                  -- FIXME: Define instance Show Environment instead
+                  let gms = games env
+                  let sps = specs env
+                  let info :: (a -> String) -> String -> [a] -> String
+                      info fid name items = case length items of
+                                                0 -> "0 " ++ name
+                                                n | n < 5 -> (show n) ++ " " ++ name ++ ": " ++ concat (intersperse ", " (map fid items))
+                                                n | n >= 5 -> info fid name (take 4 items) ++ ", ..."
+                  outputStrLn ((info (show . gid) "game(s)" gms) ++ ".")
+                  outputStrLn ((info sname "spec(s)" sps) ++ ".")
 
 cmdVerify :: Command
-cmdVerify = (\params -> do env <- lift get
-                           let cg :: Game -> [Spec] -> ProgramState
-                               cg g (s:ss) = let passed = sat (formula s) (events g)
-                                                 msg = if passed then "passed" else "failed"
-                                             in outputStrLn ((sname s) ++ ": " ++ msg) >> cg g ss
-                               cg g [] = return ()
+cmdVerify = Command {
+    commandName = "verify",
+    helpText = "verify -- check if the games satisfy the specs.\n" ++
+               "USAGE: verify",
+    runCommand = runVerify
+}
 
-                           let cgs :: [Game] -> [Spec] -> ProgramState
-                               cgs (g:gs) ss = do outputStrLn ("Verifying game " ++ (show $ gid g) ++ ".")
-                                                  cg g ss
-                               cgs [] _ = return ()
-                           cgs (games env) (specs env),
-             ("verify",
-              "verify -- check if the games satisfy the specs.\n" ++
-              "USAGE: verify")
-            )
+runVerify :: [String] -> ProgramState
+runVerify _ = do env <- lift get
+                 let cg :: Game -> [Spec] -> ProgramState
+                     cg g [] = return ()
+                     cg g (s:ss) = let passed = sat (formula s) (events g)
+                                       msg = if passed then "passed" else "failed"
+                                   in outputStrLn ((sname s) ++ ": " ++ msg) >> cg g ss
+                 let cgs :: [Game] -> [Spec] -> ProgramState
+                     cgs [] _ = return ()
+                     cgs (g:gs) ss = do outputStrLn ("Verifying game " ++ (show $ gid g) ++ ".")
+                                        cg g ss
+                                        cgs gs ss
+
+                 cgs (games env) (specs env)
+
