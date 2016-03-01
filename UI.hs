@@ -35,16 +35,34 @@ instance Show Environment where
                    join = \items -> concat $ intersperse ", " items
                    desc :: (a -> String) -> String -> [a] -> String
                    desc _ n [] = "0 " ++ n
-                   desc f n is | length is < 5 = (show (length n)) ++ " " ++ n ++ ": " ++ (join $ map f is)
+                   desc f n is | length is < 5 = (show (length is)) ++ " " ++ n ++ ": " ++ (join $ map f is)
                    desc f n is | length is >= 5 = desc f n (take 4 is) ++ ", ..."
                in desc (show . gid) "game(s)" (games env) ++ ".\n" ++
                   desc specName "spec(s)" (specs env) ++ "."
 
+getGame :: Environment -> Int -> Maybe Game
+getGame env gameId = let f :: [Game] -> Maybe Game
+                         f [] = Nothing
+                         f (g:gs) = if gid g == gameId then Just g else f gs
+                     in f (games env)
+
 addGame :: Game -> Environment -> Environment
 addGame game env = env {games = games env ++ [game]}
 
+dropGame :: Game -> Environment -> Environment
+dropGame game env = env {games = [gg | gg <- games env, gg /= game]}
+
+getSpec :: Environment -> String -> Maybe Spec
+getSpec env nSpec = let f :: [Spec] -> Maybe Spec
+                        f [] = Nothing
+                        f (s:ss) = if specName s == nSpec then Just s else f ss
+                     in f (specs env)
+
 addSpec :: Spec -> Environment -> Environment
 addSpec spec env = env {specs = specs env ++ [spec]}
+
+dropSpec :: Spec -> Environment -> Environment
+dropSpec spec env = env {specs = [ss | ss <- specs env, ss /= spec]}
 
 defaultEnv :: Environment
 defaultEnv = Environment{
@@ -69,7 +87,7 @@ failCmd cmd = outputStrLn ("Invalid command syntax. " ++
 
 
 commands :: [Command]
-commands = [cmdQuit, cmdHelp, cmdAbout, cmdLoad, cmdStatus, cmdVerify]
+commands = [cmdQuit, cmdHelp, cmdAbout, cmdLoad, cmdStatus, cmdVerify, cmdDrop]
 
 getCommand :: String -> Maybe Command
 getCommand name = lookup name (zip (map commandName commands) commands)
@@ -190,14 +208,24 @@ runVerify _ = do env <- lift get
 
                  cgs (games env) (specs env)
 
---cmdDrop = Command {
---   commandName = "drop",
---   helpText = "drop -- remove a game or a spec from the active environment.\n" ++
---              "USAGE: drop [game | spec] <identifier>",
---   runCommand = runDrop
---}
---
---runDrop :: [String] -> ProgramState
---runDrop ("game":ids) = return ()
---runDrop ("spec":ids) = return ()
---runDrop _ = failCmd cmdDrop
+cmdDrop :: Command
+cmdDrop = Command {
+   commandName = "drop",
+   helpText = "drop -- remove a game or a spec from the active environment.\n" ++
+              "USAGE: drop [game | spec] <identifier>",
+   runCommand = runDrop
+}
+
+-- FIXME: Modify to handle multiple game and spec identifiers
+runDrop :: [String] -> ProgramState
+runDrop ("game":ids) = do env <- lift get
+                          case getGame env (read (head ids)) of
+                              Nothing -> outputStrLn "No such game."
+                              Just g -> lift $ modify (dropGame g)
+                          runCommand cmdStatus []
+runDrop ("spec":ids) = do env <- lift get
+                          case getSpec env (head ids) of
+                              Nothing -> outputStrLn "No such spec." >> return ()
+                              Just s -> lift $ modify (dropSpec s)
+                          runCommand cmdStatus []
+runDrop _ = failCmd cmdDrop
