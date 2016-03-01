@@ -32,10 +32,14 @@ natural = Token.natural lexer
 identifier = Token.identifier lexer
 symbol = Token.symbol lexer
 
+specs :: Parser [Spec]
+specs = many1 spec
+
 spec :: Parser Spec
 spec = do nm <- identifier
           _ <- symbol ":"
           phi <- ltl24
+          _ <- symbol ";"
           return Spec{ specName=nm, specFormula=phi }
 
 ltl24 :: Parser LTL24

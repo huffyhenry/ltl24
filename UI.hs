@@ -16,6 +16,7 @@ import F24File
 import Defs
 import LTL24()
 import Spec
+import SpecFile
 import qualified Parsers as P
 
 prompt = "LTL24$ "
@@ -170,6 +171,12 @@ runLoad ("spec":("inline":rest)) = do case parse P.spec "" (unwords rest) of
                                           Left _ -> outputStrLn "Syntax error."
                                           Right sp -> do lift $ modify (addSpec sp)
                                                          runCommand cmdStatus []
+runLoad ("spec":rest) = do ss <- lift $ lift $ loadSpecsFromFile (head rest)
+                           let f :: [Spec] -> ProgramState
+                               f [] = runCommand cmdStatus []
+                               f (s:tt) = (lift $ modify (addSpec s)) >> f tt
+                           f ss
+
 runLoad _ = failCmd cmdLoad
 
 
