@@ -24,7 +24,7 @@ is annotated with temporal ordering of Events, the appropriate SQL query is
 still relatively cumbersome and inefficient. By contrast, LTL24 expresses it
 in an entirely natural fashion as:
 
-> `always`(type_id=15 `implies` (`next` type_id=10))
+> **always**(type_id=15 **implies** (**next** type_id=10))
 
 using LTL's temporal modalities `always` and `next`, 
 and the propositional connective `implies`.
