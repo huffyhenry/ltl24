@@ -1,7 +1,3 @@
--- This file is part of the LTL24 data querying system.
--- Copyright (c) Marek Kwiatkowski, 2015. All rights reserved.
--- Unlicensed use and distribution prohibited.
-
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Defs where
 

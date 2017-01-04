@@ -1,7 +1,3 @@
--- This file is part of the LTL24 data querying system.
--- Copyright (c) Marek Kwiatkowski, 2015. All rights reserved.
--- Unlicensed use and distribution prohibited.
-
 module UI where
 
 import Data.List (intersperse)
@@ -150,8 +146,6 @@ cmdAbout = Command {
 
 runAbout :: [String] -> ProgramState
 runAbout _ = do outputStrLn "LTL24 data querying and verification system, version 0.0.1."
-                outputStrLn "Copyright (c) Marek Kwiatkowski <marek@mareklab.org>, 2015."
-                outputStrLn "Unauthorized use and distribution prohibited."
 
 cmdLoad :: Command
 cmdLoad = Command {

@@ -82,6 +82,3 @@ immediately followed by a save. In the future versions (if any) of the software,
 the actual instance of the Event violating the requirement (known as "counterexample") 
 should be produced, enabling the user to search for patterns of interest by attempting to prove their negation.
 
-## Copyright notice
-Copyright (c) Marek Kwiatkowski, 2015. All rights reserved.
-Unlicensed use and distribution prohibited.
