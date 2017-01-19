@@ -47,11 +47,11 @@ project is a file `specs.txt` with two sample requirements:
 >
 > saves: **always** (type_id=15 **implies** (**next** type_id=10));
 
-The `halves` requirement means simply that the start of the second half must
-follow the start of the first.
+The `halves` requirement means simply that first and second half start events
+exist and the start of the second must follow the start of the first.
 
 Also in the project is the `f24sample.xml` file, which is 
-an anonymized (names, dates and IDs altered, otherwise untouched) F24 coding of 
+an anonymized -- names, dates and IDs altered, otherwise untouched -- F24 coding of 
 a recent football game (unfortunately I was denied
 permission from Opta to include the original file). The following sample session 
 lets us determine if the file satisfies the two requirements:
