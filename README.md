@@ -50,9 +50,11 @@ project is a file `specs.txt` with two sample requirements:
 The `halves` requirement means simply that the start of the second half must
 follow the start of the first.
 
-Also in the project, courtesy of Opta, is the `f24sample.xml` file, which is 
-the F24 coding of the [game]. The following sample session lets us determine 
-if the file satisfies the two requirements:
+Also in the project is the `f24sample.xml` file, which is 
+an anonymized (names, dates and IDs altered, otherwise untouched) F24 coding of 
+a recent football game (unfortunately I was denied
+permission from Opta to include the original file). The following sample session 
+lets us determine if the file satisfies the two requirements:
 
 > marek@jules:/home/marek/Projects/ltl24 (master)$ ./Main<br>
 > Welcome to LTL24 v0.1.0.<br>

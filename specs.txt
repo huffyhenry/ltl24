@@ -1,0 +1,2 @@
+halves: exists (type_id=32 and period_id=1 and next (exists (type_id=32 and period_id=2)));
+saves: always (type_id=15 implies (next type_id=10));
